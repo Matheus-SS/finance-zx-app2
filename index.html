@@ -260,6 +260,8 @@
 
   <script>
     let expenses = [];
+    const formattedValue = document.getElementById('formattedAmount');
+    const realValue = document.getElementById('amount');
 
     function formatToBRL(value) {
       const options = { minimumFractionDigits: 2 }
@@ -273,8 +275,6 @@
       form.style.display = currentDisplay === 'none' ? 'block' : 'none';
     });
 
-    const formattedValue = document.getElementById('formattedAmount');
-    const realValue = document.getElementById('amount');
     formattedValue.addEventListener('input', function (e) {
       let value = formattedValue.value;
       // Remove tudo que não for número
