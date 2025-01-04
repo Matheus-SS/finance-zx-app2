@@ -1,321 +1,400 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Expense Tracker Pro</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: "Segoe UI", system-ui, sans-serif;
+            }
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense Tracker Pro</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-    }
+            body {
+                min-height: 100vh;
+                background: linear-gradient(135deg, #f3e8ff 0%, #e0f2fe 100%);
+                padding: 1rem;
+            }
 
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #f3e8ff 0%, #e0f2fe 100%);
-      padding: 1rem;
-    }
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 1rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                padding: 2rem;
+            }
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 1rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      padding: 2rem;
-    }
+            .header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
 
-    .header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
+            h1 {
+                color: #6b21a8;
+                margin-bottom: 1rem;
+            }
 
-    h1 {
-      color: #6b21a8;
-      margin-bottom: 1rem;
-    }
+            .summary {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem;
+            }
 
-    .summary {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
+            .total-expenses {
+                background: #f3e8ff;
+                padding: 1rem;
+                border-radius: 0.5rem;
+            }
 
-    .total-expenses {
-      background: #f3e8ff;
-      padding: 1rem;
-      border-radius: 0.5rem;
-    }
+            .total-expenses p:first-child {
+                color: #6b21a8;
+                font-size: 0.875rem;
+            }
 
-    .total-expenses p:first-child {
-      color: #6b21a8;
-      font-size: 0.875rem;
-    }
+            .total-expenses p:last-child {
+                font-size: 1.25rem;
+                font-weight: bold;
+                color: #6b21a8;
+            }
 
-    .total-expenses p:last-child {
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: #6b21a8;
-    }
+            .add-expense {
+                background: #6b21a8;
+                color: white;
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 0.5rem;
+                cursor: pointer;
+                font-weight: 500;
+            }
 
-    .add-expense {
-      background: #6b21a8;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      font-weight: 500;
-    }
+            .add-expense:hover {
+                background: #581c87;
+            }
 
-    .add-expense:hover {
-      background: #581c87;
-    }
+            .expense-form {
+                background: #f3e8ff;
+                padding: 1.5rem;
+                border-radius: 0.5rem;
+                margin-bottom: 2rem;
+                display: block;
+            }
 
-    .expense-form {
-      background: #f3e8ff;
-      padding: 1.5rem;
-      border-radius: 0.5rem;
-      margin-bottom: 2rem;
-      display: block;
-    }
+            .form-grid {
+                display: grid;
+                grid-template-rows: repeat(auto-fit, minmax(1fr));
+                gap: 1rem;
+                margin-bottom: 1rem;
+            }
 
-    .form-grid {
-      display: grid;
-      grid-template-rows: repeat(auto-fit, minmax(1fr));
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+            .expense-form input {
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+            }
 
-    .expense-form input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.5rem;
-    }
+            .expense-form-container-radio {
+                display: flex;
+            }
 
-    .expense-form-container-radio {
-      display: flex;
-    }
+            .expense-form-container-radio input[type="radio"] {
+                /* Add if not using autoprefixer */
+                -webkit-appearance: none;
+                appearance: none;
+                /* For iOS < 15 to remove gradient background */
+                background-color: #fff;
+                /* Not removed via appearance */
+                margin-right: 0.45em;
 
-    .expense-form-container-radio input[type="radio"] {
-      /* Add if not using autoprefixer */
-      -webkit-appearance: none;
-      appearance: none;
-      /* For iOS < 15 to remove gradient background */
-      background-color: #fff;
-      /* Not removed via appearance */
-      margin-right: 0.45em;
+                font: inherit;
+                color: currentColor;
+                width: 1.15em;
+                height: 1.15em;
+                border-radius: 50%;
+                transform: translateY(-0.075em);
 
-      font: inherit;
-      color: currentColor;
-      width: 1.15em;
-      height: 1.15em;
-      border-radius: 50%;
-      transform: translateY(-0.075em);
+                display: grid;
+                place-content: center;
+            }
 
-      display: grid;
-      place-content: center;
-    }
+            .expense-form-container-radio input[type="radio"]::before {
+                content: "";
+                width: 0.85em;
+                height: 0.855em;
+                border-radius: 50%;
+                transform: scale(0);
+                transition: 120ms transform ease-in-out;
+                box-shadow: inset 1em 1em #6b21a8;
+            }
 
-    .expense-form-container-radio input[type="radio"]::before {
-      content: "";
-      width: 0.85em;
-      height: 0.855em;
-      border-radius: 50%;
-      transform: scale(0);
-      transition: 120ms transform ease-in-out;
-      box-shadow: inset 1em 1em #6b21a8;
-    }
+            .expense-form-container-radio input[type="radio"]:checked::before {
+                transform: scale(1);
+            }
 
-    .expense-form-container-radio input[type="radio"]:checked::before {
-      transform: scale(1);
-    }
+            .expense-form button {
+                width: 100%;
+                background: #6b21a8;
+                color: white;
+                padding: 0.75rem;
+                border: none;
+                border-radius: 0.5rem;
+                cursor: pointer;
+            }
 
-    .expense-form button {
-      width: 100%;
-      background: #6b21a8;
-      color: white;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 0.5rem;
-      cursor: pointer;
-    }
+            .expense-list {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
 
-    .expense-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
+            .expense-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                background: white;
+                border-radius: 0.5rem;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
 
-    .expense-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-      background: white;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
+            .expense-info {
+                display: flex;
+                gap: 1rem;
+                align-items: center;
+            }
 
-    .expense-info {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
+            .expense-icon {
+                background: #f3e8ff;
+                padding: 0.5rem;
+                border-radius: 50%;
+                color: #6b21a8;
+            }
 
-    .expense-icon {
-      background: #f3e8ff;
-      padding: 0.5rem;
-      border-radius: 50%;
-      color: #6b21a8;
-    }
+            .expense-details h3 {
+                color: #1f2937;
+                margin-bottom: 0.25rem;
+            }
 
-    .expense-details h3 {
-      color: #1f2937;
-      margin-bottom: 0.25rem;
-    }
+            .expense-date {
+                color: #6b7280;
+                font-size: 0.875rem;
+            }
 
-    .expense-date {
-      color: #6b7280;
-      font-size: 0.875rem;
-    }
+            .expense-amount {
+                color: #6b21a8;
+                font-weight: bold;
+            }
 
-    .expense-amount {
-      color: #6b21a8;
-      font-weight: bold;
-    }
+            @media (max-width: 640px) {
+                .expense-item {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.5rem;
+                }
 
-    @media (max-width: 640px) {
-      .expense-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
+                .container {
+                    padding: 1rem;
+                }
+            }
+        </style>
+    </head>
 
-      .container {
-        padding: 1rem;
-      }
-    }
-  </style>
-</head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Expense Tracker Pro</h1>
+                <div class="summary">
+                    <div class="total-expenses">
+                        <p>Total Despesas</p>
+                        <p id="total-amount">R$0.00</p>
+                    </div>
+                    <button class="add-expense" id="toggleForm">
+                        Adicionar Despesas
+                    </button>
+                </div>
+            </div>
 
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Expense Tracker Pro</h1>
-      <div class="summary">
-        <div class="total-expenses">
-          <p>Total Despesas</p>
-          <p id="total-amount">R$0.00</p>
+            <form class="expense-form" id="expenseForm">
+                <div class="form-grid">
+                    <input
+                        type="text"
+                        id="description"
+                        placeholder="Descrição"
+                        required
+                    />
+                    <input type="date" id="date" required />
+                    <strong>Qual o tipo de despesa:</strong>
+                    <div class="expense-form-container-radio">
+                        <input
+                            type="radio"
+                            id="fixed"
+                            value="1"
+                            name="expenseType"
+                        />
+                        <label for="fixed">Fixa</label>
+                    </div>
+                    <div class="expense-form-container-radio">
+                        <input
+                            type="radio"
+                            id="changeable"
+                            value="2"
+                            name="expenseType"
+                            checked
+                        />
+                        <label for="changeable">Variável</label>
+                    </div>
+                    
+                        <strong class="notify">Notificar vencimento:</strong>
+                        <div class="expense-form-container-radio notify">
+                            <input
+                                type="radio"
+                                id="notifyYes"
+                                value="1"
+                                name="notify"
+                            />
+                            <label for="notifyYes">Sim</label>
+                        </div>
+                        <div class="expense-form-container-radio notify">
+                            <input
+                                type="radio"
+                                id="notifyNo"
+                                value="0"
+                                name="notify"
+                                checked
+                            />
+                            <label for="notifyNo">Não</label>
+                        </div>  
+                    
+                    
+                    <strong>Conta paga:</strong>
+                    <div class="expense-form-container-radio">
+                        <input
+                            type="radio"
+                            id="paidYes"
+                            value="1"
+                            name="paid"
+                        />
+                        <label for="paidYes">Sim</label>
+                    </div>
+                    <div class="expense-form-container-radio">
+                        <input
+                            type="radio"
+                            id="paidNo"
+                            value="0"
+                            name="paid"
+                            checked
+                        />
+                        <label for="paidNo">Não</label>
+                    </div>
+                    <input
+                        type="text"
+                        id="formattedAmount"
+                        placeholder="0,00"
+                        required
+                    />
+                    <input
+                        type="number"
+                        id="amount"
+                        hidden
+                        step="0.01"
+                        required
+                    />
+                </div>
+                <button type="submit">Save Expense</button>
+            </form>
+
+            <div class="expense-list" id="expenseList"></div>
         </div>
-        <button class="add-expense" id="toggleForm">Adicionar Despesas</button>
-      </div>
-    </div>
 
-    <form class="expense-form" id="expenseForm">
-      <div class="form-grid">
-        <input type="text" id="description" placeholder="Descrição" required>
-        <input type="date" id="date" required>
-        <strong>Qual o tipo de despesa:</strong>
-        <div class="expense-form-container-radio">
-          <input type="radio" id="fixed" value="1" name="expenseType">
-          <label for="fixed">Fixa</label>
-        </div>
-        <div class="expense-form-container-radio">
-          <input type="radio" id="changeable" value="2" name="expenseType" checked>
-          <label for="changeable">Variável</label>
-        </div>
-        <strong>Notificar vencimento:</strong>
-        <div class="expense-form-container-radio">
-          <input type="radio" id="notifyYes" value="1" name="notify">
-          <label for="notifyYes">Sim</label>
-        </div>
-        <div class="expense-form-container-radio">
-          <input type="radio" id="notifyNo" value="0" name="notify" checked>
-          <label for="notifyNo">Não</label>
-        </div>
-        <strong>Conta paga:</strong>
-        <div class="expense-form-container-radio">
-          <input type="radio" id="paidYes" value="1" name="paid">
-          <label for="paidYes">Sim</label>
-        </div>
-        <div class="expense-form-container-radio">
-          <input type="radio" id="paidNo" value="0" name="paid" checked>
-          <label for="paidNo">Não</label>
-        </div>
-        <input type="text" id="formattedAmount" placeholder="0,00" required>
-        <input type="number" id="amount" hidden step="0.01" required>
-      </div>
-      <button type="submit">Save Expense</button>
-    </form>
+        <script>
+            let expenses = [];
+            const formattedValue = document.getElementById("formattedAmount");
+            const realValue = document.getElementById("amount");
+            const expenseTypeInputs = document.querySelectorAll('input[name="expenseType"]') 
+            const notifyElements = document.querySelectorAll('.notify');
+         
+            console.log(notifyElements)
+            function formatToBRL(value) {
+                const options = { minimumFractionDigits: 2 };
+                const formatNumber = new Intl.NumberFormat("pt-BR", options);
+                return formatNumber.format(value);
+            }
 
-    <div class="expense-list" id="expenseList">
-    </div>
-  </div>
+            expenseTypeInputs.forEach(radioButton => {
+                radioButton.addEventListener('change', function () {
+                    console.log("display", this)
 
-  <script>
-    let expenses = [];
-    const formattedValue = document.getElementById('formattedAmount');
-    const realValue = document.getElementById('amount');
+                    if (this.value === "1") {
+                        notifyElements.forEach(ne => ne.style.display = "flex")
+                    } else {
+                        notifyElements.forEach(ne => ne.style.display = "none")
+                    }
+                })
+            })
+            document
+                .getElementById("toggleForm")
+                .addEventListener("click", () => {
+                    const form = document.getElementById("expenseForm");
+                    const currentDisplay = getComputedStyle(form).display;
+                    form.style.display =
+                        currentDisplay === "none" ? "block" : "none";
+                });
 
-    function formatToBRL(value) {
-      const options = { minimumFractionDigits: 2 }
-      const formatNumber = new Intl.NumberFormat('pt-BR', options)
-      return formatNumber.format(value)
-    }
+            formattedValue.addEventListener("input", function (e) {
+                let value = formattedValue.value;
+                // Remove tudo que não for número
+                value = value.replace(/\D/g, "");
+                // Adiciona vírgula como separador decimal
+                let fmtValue = (value / 100).toFixed(2).replace(".", ",");
+                // Adiciona separador de milhar
+                fmtValue = fmtValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-    document.getElementById('toggleForm').addEventListener('click', () => {
-      const form = document.getElementById('expenseForm');
-      const currentDisplay = getComputedStyle(form).display;
-      form.style.display = currentDisplay === 'none' ? 'block' : 'none';
-    });
+                // Atualiza o campo com o valor formatado
+                formattedValue.value = fmtValue;
+                realValue.value = value / 100;
+                console.log("real", realValue.value);
+            });
 
-    formattedValue.addEventListener('input', function (e) {
-      let value = formattedValue.value;
-      // Remove tudo que não for número
-      value = value.replace(/\D/g, "");
-      // Adiciona vírgula como separador decimal
-      let fmtValue = (value / 100).toFixed(2).replace(".", ",");
-      // Adiciona separador de milhar
-      fmtValue = fmtValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-      // Atualiza o campo com o valor formatado
-      formattedValue.value = fmtValue;
-      realValue.value = value / 100;
-      console.log("real", realValue.value)
-    });
 
-    document.getElementById('expenseForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      console.log("EXPENSE", realValue.value)
-      console.log("TYPE", document.querySelector('input[name="expenseType"]:checked').value)
-      const expense = {
-        id: Date.now(),
-        description: document.getElementById('description').value,
-        date: document.getElementById('date').value,
-        amount: parseFloat(realValue.value)
-      };
+            document
+                .getElementById("expenseForm")
+                .addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    console.log("EXPENSE", realValue.value);
+                    console.log(
+                        "TYPE",
+                        document.querySelector(
+                            'input[name="expenseType"]:checked',
+                        ).value,
+                    );
+                    const expense = {
+                        id: Date.now(),
+                        description:
+                            document.getElementById("description").value,
+                        date: document.getElementById("date").value,
+                        amount: parseFloat(realValue.value),
+                    };
 
-      expenses.push(expense);
-      updateUI();
+                    expenses.push(expense);
+                    updateUI();
 
-      // e.target.reset();
-      // e.target.style.display = 'none';
-    });
+                    // e.target.reset();
+                    // e.target.style.display = 'none';
+                });
 
-    function updateUI() {
-      const expenseList = document.getElementById('expenseList');
-      expenseList.innerHTML = '';
+            function updateUI() {
+                const expenseList = document.getElementById("expenseList");
+                expenseList.innerHTML = "";
 
-      expenses.forEach(expense => {
-        const item = document.createElement('div');
-        item.className = 'expense-item';
-        item.innerHTML = `
+                expenses.forEach((expense) => {
+                    const item = document.createElement("div");
+                    item.className = "expense-item";
+                    item.innerHTML = `
                     <div class="expense-info">
                         <div class="expense-icon">📝</div>
                         <div class="expense-details">
@@ -325,14 +404,17 @@
                     </div>
                     <p class="expense-amount">R$${formatToBRL(expense.amount)}</p>
                 `;
-        expenseList.appendChild(item);
-      });
+                    expenseList.appendChild(item);
+                });
 
-      const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-      console.log("total", total)
-      document.getElementById('total-amount').textContent = `R$${formatToBRL(total)}`;
-    }
-  </script>
-</body>
-
+                const total = expenses.reduce(
+                    (sum, expense) => sum + expense.amount,
+                    0,
+                );
+                console.log("total", total);
+                document.getElementById("total-amount").textContent =
+                    `R$${formatToBRL(total)}`;
+            }
+        </script>
+    </body>
 </html>
