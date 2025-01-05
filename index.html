@@ -258,176 +258,75 @@
             </div>
             <button type="submit">Save Expense</button>
         </form>
-
+        <button type="button" id="enviar-para-worker">Save Expense</button>
         <div class="expense-list" id="expenseList"></div>
     </div>
-    <script src="sql-wasm.js"></script>
+    <script src="sqlite3.js"></script>
     <script>
-        window.indexedDB =
-            window.indexedDB ||
-            window.mozIndexedDB ||
-            window.webkitIndexedDB ||
-            window.msIndexedDB;
+        let sqliteWorker;
+        let db;
+        if (window.Worker) {
+          console.log("acessando worker")
+          //sqliteWorker = new Worker('sqlite-worker.js', { type: 'module' });
+         sqliteWorker = new Worker("sqlite-worker.js")
 
-        // Check browser support
-        if (!window.indexedDB) {
-            alert("Desculpe! Seu navegador não suporta IndexedDB. Então não é possível usar essa aplicação.");
+          document.getElementById('enviar-para-worker').addEventListener('click', async (event) => {
+            console.log("DB",db)
+            const result = await sendMessageToWorker('insert-data');
+
+            console.log("conexao", result)
+          })
         }
-        let SQL; // Objeto Sql.js carregado
-        let db; // Instancia do banco SQLite
 
-        async function initDB() {
+        async function initDb() {
             try {
-                SQL = await initSqlJs({
-                    locateFile: file => 'sql-wasm.wasm'
-                });
-
-                const savedData = await loadSqliteDbFromIndexedDB();
-
-                if (savedData) {
-                    //Converte o ArrayBuffer salvo para Uint8Array (formato que o SQLite aceita)
-                    db = new SQL.Database(new Uint8Array(savedData));
-                } else {
-                    db = new SQL.Database();
-                    db.run(`
-                        CREATE TABLE IF NOT EXISTS expenses (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            value DECIMAL (10,2),
-                            date  TEXT NOT NULL,
-                            description TEXT NOT NULL,
-                            type INTEGER NOT NULL CHECK (type IN (1,2)),
-                            notify BOOLEAN NOT NULL CHECK (notify IN (0,1)),
-                            paid BOOLEAN NOT NULL CHECK (paid IN (0,1)),
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                        );
+                const sqlite3 = await sqlite3InitModule({
+                    locateFile: filename => 'sqlite3.wasm',
+                    print: console.log,
+                    printErr: console.error
+                }); // Carrega o SQLite WASM
+                console.log("SQLite inicializado no Worker.");
+                console.log("sqlite", sqlite3);
+                const filename = '/mydb.sqlite';
+                db = new sqlite3.oo1.DB(filename, 'ct');
+                console.log("db", db)
+                db.exec(`
+                    CREATE TABLE IF NOT EXISTS expenses (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        value DECIMAL (10,2),
+                        date  TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        type INTEGER NOT NULL CHECK (type IN (1,2)),
+                        notify BOOLEAN NOT NULL CHECK (notify IN (0,1)),
+                        paid BOOLEAN NOT NULL CHECK (paid IN (0,1)),
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );
                     `);
-                }
-                db.run(`
-                        INSERT INTO expenses (
-                            value, 
-                            date, 
-                            description, 
-                            type, 
-                            notify, 
-                            paid
-                        ) VALUES (150.25, '20/10/2024', 'Academia', 1, 0, 0);
-                    `);
-                await saveSqliteDbIntoIndexedDB();
-                const result = db.exec("SELECT * FROM expenses");
-                console.log("USUARIOS", result)
-                console.log("Banco de dados inicializado");
+
+                console.log("Tabela 'expenses' criada");
             } catch (error) {
-                console.error('Erro ao inicializar o banco:', error);
+                console.error('initDb: Error', error);
+                throw new Error(error);
             }
         }
 
-        async function saveSqliteDbIntoIndexedDB() {
-            //exporta o banco de dados sqlite para um ArrayBuffer
-            const data = db.export();
-
+        initDb()
+        async function sendMessageToWorker(method, payload) {
             return new Promise((resolve, reject) => {
-                // Abre/cria banco IndexedDB
-                const request = indexedDB.open('SqliteStorage', 1);
-
-                request.onerror = (event) => {
-                    console.error("Erro no IndexedDB:", event);
-                    reject(event.target.error);
-                }
-
-                // Chamado quando o banco precisa ser criado/atualizado
-                request.onupgradeneeded = (event) => {
-                    console.log("IndexedDB:", event);
-                    const idb = event.target.result;
-                    if (!idb.objectStoreNames.contains('sqliteDb')) {
-                        console.log("Criando/atualizando o banco IndexedDB");
-                        idb.createObjectStore('sqliteDb');
+                // Escuta a resposta do Worker
+                sqliteWorker.onmessage = (event) => {
+                    const { status, data } = event.data;
+                    if (status === 'success') {
+                        resolve(data); // Resolve a Promise no caso de sucesso
+                    } else {
+                        reject(data); // Rejeita a Promise no caso de erro
                     }
-                }
-
-                request.onsuccess = (event) => {
-                    // conexao com o banco IndexedDB
-                    const idb = event.target.result;
-
-                    const transaction = idb.transaction(['sqliteDb'], 'readwrite');
-
-                    transaction.onerror = (event) => {
-                        console.log("Erro na transação: ", event);
-                        reject(event.target.error);
-                    };
-
-                    transaction.oncomplete = () => {
-                        console.log("Transação de salvar Sqlite no IndexedDB completada com sucesso");
-                        resolve();
-                    };
-
-                    const store = transaction.objectStore('sqliteDb');
-                    const putRequest = store.put(data, 'database');
-
-                    putRequest.onerror = (event) => {
-                        console.error("Erro ao salvar dados:", event);
-                        reject(event.target.error);
-                    };
-
-                    putRequest.onsuccess = () => {
-                        console.log("Dados do Sqlite salvos com sucesso no IndexedDB");
-                    };
-                }
-            })
+                };
+                console.log("send", payload)
+                // Envia a mensagem ao Worker
+                sqliteWorker.postMessage({ method: method, payload: payload });
+            });
         }
-
-        async function loadSqliteDbFromIndexedDB() {
-            return new Promise((resolve, reject) => {
-                // Abre/cria banco IndexedDB
-                const request = indexedDB.open('SqliteStorage', 1);
-
-                request.onerror = (event) => {
-                    console.error("Erro ao carregar IndexedDB:", event);
-                    reject(event.target.error);
-                }
-
-                // Chamado quando o banco precisa ser criado/atualizado
-                request.onupgradeneeded = (event) => {
-                    console.log("Carregar banco IndexedDB:", event);
-                    const idb = event.target.result;
-                    if (!idb.objectStoreNames.contains('sqliteDb')) {
-                        console.log("Criando/atualizando o banco IndexedDB");
-                        idb.createObjectStore('sqliteDb');
-                    }
-                }
-
-                request.onsuccess = (event) => {
-                    // conexao com o banco IndexedDB
-                    const idb = event.target.result;
-
-                    const transaction = idb.transaction(['sqliteDb'], 'readonly');
-
-                    transaction.onerror = (event) => {
-                        console.log("Erro na transação de carregar banco: ", event);
-                        reject(event.target.error);
-                    };
-
-                    transaction.oncomplete = () => {
-                        console.log("Transação de carregar dados do IndexedDB completada com sucesso");
-                        resolve();
-                    };
-
-                    const store = transaction.objectStore('sqliteDb');
-                    const getRequest = store.get('database');
-
-                    getRequest.onerror = (event) => {
-                        console.error("Erro ao carregar dados do IndexedDB:", event);
-                        reject(event.target.error);
-                    };
-
-                    getRequest.onsuccess = () => {
-                        console.log("Dados do IndexedDB carregados com sucesso");
-                        resolve(getRequest.result);
-                    };
-                }
-            })
-        }
-
-        initDB();
 
         let expenses = [];
         const formattedValue = document.getElementById("formattedAmount");
