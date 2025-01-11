@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
     <title>Expense Tracker Pro</title>
     <style>
         * {
@@ -258,59 +260,42 @@
             </div>
             <button type="submit">Save Expense</button>
         </form>
-        <button type="button" id="enviar-para-worker">Save Expense</button>
         <div class="expense-list" id="expenseList"></div>
     </div>
-    <script src="sqlite3.js"></script>
+    <script src="sql-wasm.js"></script>
     <script>
         let sqliteWorker;
         let db;
+        let expenses = [];
         if (window.Worker) {
-          console.log("acessando worker")
-          //sqliteWorker = new Worker('sqlite-worker.js', { type: 'module' });
-         sqliteWorker = new Worker("sqlite-worker.js")
-
-          document.getElementById('enviar-para-worker').addEventListener('click', async (event) => {
-            console.log("DB",db)
-            const result = await sendMessageToWorker('insert-data');
-
-            console.log("conexao", result)
-          })
+            console.log("acessando worker")
+            //sqliteWorker = new Worker('sqlite-worker.js', { type: 'module' });
+            sqliteWorker = new Worker("sqlite-worker.js")
+            initDB().catch(console.error)
         }
 
-        async function initDb() {
-            try {
-                const sqlite3 = await sqlite3InitModule({
-                    locateFile: filename => 'sqlite3.wasm',
-                    print: console.log,
-                    printErr: console.error
-                }); // Carrega o SQLite WASM
-                console.log("SQLite inicializado no Worker.");
-                console.log("sqlite", sqlite3);
-                const filename = '/mydb.sqlite';
-                db = new sqlite3.oo1.DB(filename, 'ct');
-                console.log("db", db)
-                db.exec(`
-                    CREATE TABLE IF NOT EXISTS expenses (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        value DECIMAL (10,2),
-                        date  TEXT NOT NULL,
-                        description TEXT NOT NULL,
-                        type INTEGER NOT NULL CHECK (type IN (1,2)),
-                        notify BOOLEAN NOT NULL CHECK (notify IN (0,1)),
-                        paid BOOLEAN NOT NULL CHECK (paid IN (0,1)),
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    );
-                    `);
-
-                console.log("Tabela 'expenses' criada");
-            } catch (error) {
-                console.error('initDb: Error', error);
-                throw new Error(error);
+        async function initDB() {
+            const res = await sendMessageToWorker('init-db');
+            if (res) {
+                const result = await sendMessageToWorker('list-expenses');
+                expenses = result;
+                updateUI();
             }
-        }
+            return res;
+        };
 
-        initDb()
+        /**
+         * Sends a message to a Web Worker and waits for a response.
+         * 
+         * @param {'create-expenses' | 'list-expenses' | string} method - The method name to be executed by the Worker. 
+         *                                                               Examples: 'create-expenses', 'list-expenses'.
+         * @param {any} payload - The data payload to send to the Worker.
+         * 
+         * @returns {Promise<any>} A promise that resolves with the data returned by the Worker on success, 
+         *                         or rejects with an error message on failure.
+         * 
+         * @throws Will reject the promise if the Worker responds with a failure status.
+         */
         async function sendMessageToWorker(method, payload) {
             return new Promise((resolve, reject) => {
                 // Escuta a resposta do Worker
@@ -328,13 +313,12 @@
             });
         }
 
-        let expenses = [];
         const formattedValue = document.getElementById("formattedAmount");
         const realValue = document.getElementById("amount");
         const expenseTypeInputs = document.querySelectorAll('input[name="expenseType"]')
         const notifyElements = document.querySelectorAll('.notify');
 
-        console.log(notifyElements)
+        console.log(notifyElements);
         function formatToBRL(value) {
             const options = { minimumFractionDigits: 2 };
             const formatNumber = new Intl.NumberFormat("pt-BR", options);
@@ -350,7 +334,8 @@
                     notifyElements.forEach(ne => ne.style.display = "none")
                 }
             })
-        })
+        });
+
         document
             .getElementById("toggleForm")
             .addEventListener("click", () => {
@@ -375,28 +360,30 @@
             console.log("real", realValue.value);
         });
 
-
-
         document
             .getElementById("expenseForm")
-            .addEventListener("submit", (e) => {
+            .addEventListener("submit", async (e) => {
                 e.preventDefault();
-                console.log("EXPENSE", realValue.value);
-                console.log(
-                    "TYPE",
-                    document.querySelector(
-                        'input[name="expenseType"]:checked',
-                    ).value,
-                );
+
                 const expense = {
-                    id: Date.now(),
+                    value: parseFloat(realValue.value),
+                    date: document.getElementById("date").value,
                     description:
                         document.getElementById("description").value,
-                    date: document.getElementById("date").value,
-                    amount: parseFloat(realValue.value),
+                    type: Number(document.querySelector(
+                        'input[name="expenseType"]:checked',
+                    ).value),
+                    notify: Number(document.querySelector(
+                        'input[name="notify"]:checked',
+                    ).value),
+                    paid: Number(document.querySelector(
+                        'input[name="paid"]:checked',
+                    ).value)
                 };
 
-                expenses.push(expense);
+                await sendMessageToWorker('create-expenses', expense);
+                const result = await sendMessageToWorker('list-expenses');
+                expenses = result;
                 updateUI();
 
                 // e.target.reset();
@@ -406,7 +393,7 @@
         function updateUI() {
             const expenseList = document.getElementById("expenseList");
             expenseList.innerHTML = "";
-
+            console.log("expenses", expenses);
             expenses.forEach((expense) => {
                 const item = document.createElement("div");
                 item.className = "expense-item";
@@ -418,13 +405,13 @@
                             <p class="expense-date">${expense.date}</p>
                         </div>
                     </div>
-                    <p class="expense-amount">R$${formatToBRL(expense.amount)}</p>
+                    <p class="expense-amount">R$${formatToBRL(expense.value)}</p>
                 `;
                 expenseList.appendChild(item);
             });
 
             const total = expenses.reduce(
-                (sum, expense) => sum + expense.amount,
+                (sum, expense) => sum + expense.value,
                 0,
             );
             console.log("total", total);
