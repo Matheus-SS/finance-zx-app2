@@ -173,7 +173,7 @@
         .expense-icon {
             background: #f3e8ff;
             padding: 0.5rem;
-            border-radius: 50%;
+            border-radius: 0.5rem;
             color: #6b21a8;
         }
 
@@ -191,7 +191,57 @@
             color: #6b21a8;
             font-weight: bold;
         }
+        .expense-action-edit-button {
+            background: transparent;
+            outline: none;
+            border: 0;
+            cursor: pointer;
+            margin-right: 1rem ;
+            font-size: 1rem;
+        }
+        .expense-action-delete-button {
+            background: transparent;
+            outline: none;
+            border: 0;
+            cursor: pointer;
+            margin-right: 1rem ;
+            font-size: 1rem;
+        }
 
+        /* Estilos do dialog */
+        dialog {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            text-align: center;
+            width: 300px;
+        }
+
+        dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        dialog h2 {
+            margin-top: 0;
+        }
+
+        dialog button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .close-btn {
+            background-color: #ccc;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
         @media (max-width: 640px) {
             .expense-item {
                 flex-direction: column;
@@ -262,6 +312,14 @@
         </form>
         <div class="expense-list" id="expenseList"></div>
     </div>
+
+     <!-- Modal usando dialog -->
+    <dialog id="deleteModal">
+        <h2>Confirmar Exclusão</h2>
+        <p id="modal-info"></p>
+        <button class="delete-btn" id="confirmDelete">Excluir</button>
+        <button class="close-btn" id="closeModal">Cancelar</button>
+    </dialog>
     <script src="sql-wasm.js"></script>
     <script>
         let sqliteWorker;
@@ -287,8 +345,8 @@
         /**
          * Sends a message to a Web Worker and waits for a response.
          * 
-         * @param {'create-expenses' | 'list-expenses' | string} method - The method name to be executed by the Worker. 
-         *                                                               Examples: 'create-expenses', 'list-expenses'.
+         * @param {'create-expenses' | 'list-expenses' | 'delete-expenses' | string} method - The method name to be executed by the Worker. 
+         *                                                               Examples: 'create-expenses', 'list-expenses', 'delete-expenses'.
          * @param {any} payload - The data payload to send to the Worker.
          * 
          * @returns {Promise<any>} A promise that resolves with the data returned by the Worker on success, 
@@ -319,6 +377,14 @@
         const notifyElements = document.querySelectorAll('.notify');
 
         console.log(notifyElements);
+
+        // Referências aos elementos do modal
+        const modal = document.getElementById('deleteModal');
+        const modalInfo = document.getElementById('modal-info');
+        const closeModalBtn = document.getElementById('closeModal');
+        const confirmDeleteBtn = document.getElementById('confirmDelete');
+        const deleteButtons = document.querySelectorAll('.expense-action-delete-button');
+
         function formatToBRL(value) {
             const options = { minimumFractionDigits: 2 };
             const formatNumber = new Intl.NumberFormat("pt-BR", options);
@@ -389,6 +455,27 @@
                 // e.target.reset();
                 // e.target.style.display = 'none';
             });
+        
+        function onDelete(expense) {
+            console.log("expense", expense);
+            modalInfo.textContent = `Você realmente deseja excluir "#${expense.id} - ${expense.description}" ?`;
+            modal.showModal();
+
+            // Fechar o modal
+            closeModalBtn.addEventListener('click', () => {
+                modal.close(); // Fecha o modal
+            });
+
+            // Confirmar exclusão
+            confirmDeleteBtn.addEventListener('click', async () => {
+                await sendMessageToWorker('delete-expenses', expense.id);
+                const filteredExpenses = expenses.filter((v) => v.id !== expense.id);
+                expenses = filteredExpenses;
+                updateUI();
+                modal.close(); // Fecha o modal
+            });
+            
+        };
 
         function updateUI() {
             const expenseList = document.getElementById("expenseList");
@@ -397,17 +484,29 @@
             expenses.forEach((expense) => {
                 const item = document.createElement("div");
                 item.className = "expense-item";
+                item.id = `expense-item-${expense.id}`
                 item.innerHTML = `
                     <div class="expense-info">
-                        <div class="expense-icon">📝</div>
+                        <div class="expense-icon">#${expense.id}</div>
                         <div class="expense-details">
                             <h3>${expense.description}</h3>
                             <p class="expense-date">${expense.date}</p>
                         </div>
                     </div>
-                    <p class="expense-amount">R$${formatToBRL(expense.value)}</p>
+                    <div>
+                        <p class="expense-amount">R$${formatToBRL(expense.value)}</p>
+                        <div>
+                            <button class="expense-action-edit-button" type="button">✏️</button>
+                            <button class="expense-action-delete-button" type="button">🗑️</button>  
+                        </div>
+                    </div>
+                    
                 `;
                 expenseList.appendChild(item);
+                const expenseItem = document.getElementById(`expense-item-${expense.id}`);
+                expenseItem.addEventListener('click', () => {
+                    onDelete(expense)
+                });
             });
 
             const total = expenses.reduce(

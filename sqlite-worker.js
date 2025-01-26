@@ -25,6 +25,9 @@ self.onmessage = async (event) => {
       case 'list-expenses':
         result = listExpenses();
         break
+      case 'delete-expenses':
+        await deleteExpenses(payload);
+        break
       default:
         throw new Error(`Ação desconhecida: ${method}`);
     }
@@ -145,6 +148,28 @@ function listExpenses() {
     const sql = `SELECT * FROM expenses ORDER BY 1 DESC`;
     const result = runDBQuery(sql);
     return result;
+};
+
+/**
+ * Deletes an expense from the database based on its ID.
+ *
+ * @async
+ * @function deleteExpenses
+ * @param {number} id - The unique identifier of the expense to delete.
+ * @returns {Promise<void>} Resolves when the expense is successfully deleted.
+ * @throws {Error} If the database operation fails.
+ *
+ * @example
+ * try {
+ *   await deleteExpenses(5);
+ *   console.log('Expense deleted successfully!');
+ * } catch (error) {
+ *   console.error('Failed to delete the expense:', error);
+ * }
+ */
+async function deleteExpenses(id) {
+  const sql = `DELETE FROM expenses WHERE id = ?`;
+  await runDBWrite(sql, [id]);
 };
 
 function runDBQuery(sql, params = {}) {
